@@ -12,10 +12,16 @@ class UserAdmin(BaseUserAdmin):
         (None, {'fields': ('email', 'password')}),
         (_('Personal Info'), {'fields': ('name',)}),
         (
-            _('Permission'),
-            {'fields': ('is_active', 'is_staff', 'is_superuser')}
+            _('Permissions'),
+            {
+                'fields': (
+                    'is_active',
+                    'is_staff',
+                    'is_superuser'
+                )
+            }
         ),
-        (_('Important date'), {'fields': ('last_login',)})
+        (_('Important dates'), {'fields': ('last_login',)}),
     )
     add_fieldsets = (
         (None, {
