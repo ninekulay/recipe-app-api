@@ -1,4 +1,3 @@
-from django.http import response
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -29,12 +28,12 @@ class PublicUserApiTests(TestCase):
             'password': 'password',
             'name': 'Test name'
         }
-        response = self.client.post(CREATE_USER_URL, payload)
+        responsed = self.client.post(CREATE_USER_URL, payload)
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        user = get_user_model().objects.get(**response.data)
+        self.assertEqual(responsed.status_code, status.HTTP_201_CREATED)
+        user = get_user_model().objects.get(**responsed.data)
         self.assertTrue(user.check_password(payload['password']))
-        self.assertNotIn('password', response.data)
+        self.assertNotIn('password', responsed.data)
 
     def test_user_exists(self):
         """Test creating user that already exits"""
@@ -45,9 +44,9 @@ class PublicUserApiTests(TestCase):
         }
         create_user(**payload)
 
-        response = self.client.post(CREATE_USER_URL, payload)
+        responsed = self.client.post(CREATE_USER_URL, payload)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(responsed.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_password_too_short(self):
         """password should be more than 5 char"""
@@ -56,9 +55,9 @@ class PublicUserApiTests(TestCase):
             'password': '1234',
             'name': 'Test',
         }
-        response = self.client.post(CREATE_USER_URL, payload)
+        responsed = self.client.post(CREATE_USER_URL, payload)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(responsed.status_code, status.HTTP_400_BAD_REQUEST)
         user_exists = get_user_model().objects.filter(
             email=payload['email']
         ).exists()
@@ -68,42 +67,42 @@ class PublicUserApiTests(TestCase):
         """Test that a token is create for the user"""
         payload = {'email': 'chanin@gmail.com', 'password': 'testpass'}
         create_user(**payload)
-        response = self.client.post(TOKEN_URL, payload)
+        responsed = self.client.post(TOKEN_URL, payload)
 
-        self.assertIn('token', response.data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', responsed.data)
+        self.assertEqual(responsed.status_code, status.HTTP_200_OK)
 
     def test_create_token_invalid_credentials(self):
         """Test that token is not created if invalid creadentials are given"""
         create_user(email='chanin@gmail.com', password='testpass')
         payload = {'email': 'chanin@gmail.com', 'password': 'wrongpass'}
-        response = self.client.post(TOKEN_URL, payload)
+        responsed = self.client.post(TOKEN_URL, payload)
 
-        self.assertNotIn('token', response.data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', responsed.data)
+        self.assertEqual(responsed.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_token_no_user(self):
         """Test token is not create if user doesn't exits"""
         payload = {'email': 'chanin@gmail.com', 'password': 'testpass'}
-        response = self.client.post(TOKEN_URL, payload)
+        responsed = self.client.post(TOKEN_URL, payload)
 
-        self.assertNotIn('token', response.data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', responsed.data)
+        self.assertEqual(responsed.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_token_missing_field(self):
         """Test that email and password are required"""
-        response = self.client.post(TOKEN_URL, {
+        responsed = self.client.post(TOKEN_URL, {
             'email': 'one', 'password': ''
             })
 
-        self.assertNotIn('token', response.data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', responsed.data)
+        self.assertEqual(responsed.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_retrieve_user_unauthorized(self):
         """Test that authenication is required for users"""
-        response = self.client.get(ME_URL)
+        responsed = self.client.get(ME_URL)
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(responsed.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class PrivateUserApiTests(TestCase):
@@ -120,27 +119,29 @@ class PrivateUserApiTests(TestCase):
 
     def test_retrieve_profile_success(self):
         """Test retrieve profile for logged in used"""
-        response = self.client.get(ME_URL)
+        responsed = self.client.get(ME_URL)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {
+        self.assertEqual(responsed.status_code, status.HTTP_200_OK)
+        self.assertEqual(responsed.data, {
             'name': self.user.name,
             'email': self.user.email
         })
 
     def test_post_me_not_allowed(self):
         """Test that post is not allow on that any url"""
-        response = self.client.post(ME_URL, {})
+        responsed = self.client.post(ME_URL, {})
 
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(
+            responsed.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
+            )
 
     def test_update_user_profile(self):
         """Test updating the user profile for authenticated user"""
         payload = {'name': 'newname', 'password': 'newpassword'}
 
-        response = self.client.patch(ME_URL, payload)
+        responsed = self.client.patch(ME_URL, payload)
 
-        self.user.refesh_from_db()
+        self.user.refresh_from_db()
         self.assertEqual(self.user.name, payload['name'])
         self.assertTrue(self.user.check_password, payload['password'])
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(responsed.status_code, status.HTTP_200_OK)
